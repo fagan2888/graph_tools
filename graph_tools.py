@@ -164,6 +164,7 @@ class Digraph:
 
         # Edges not belonging to tree_csr
         non_tree_csr = self.csr_matrix - tree_csr
+        non_tree_csr.eliminate_zeros()
 
         # Distance to 0
         level = np.zeros(self.n, dtype=int)
@@ -172,7 +173,7 @@ class Digraph:
 
         # Determine the period
         d = 0
-        for edge_from, edge_to in _csr_matrix_indices(self.csr_matrix):
+        for edge_from, edge_to in _csr_matrix_indices(non_tree_csr):
             value = level[edge_from] - level[edge_to] + 1
             d = gcd(d, value)
 
