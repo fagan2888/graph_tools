@@ -28,7 +28,7 @@ class Digraph:
 
     Attributes
     ----------
-    is_irreducible : bool
+    is_strongly_connected : bool
         Indicate whether the array is an irreducible matrix.
 
     num_comm_classes : int
@@ -40,9 +40,9 @@ class Digraph:
     """
 
     def __init__(self, input):
-        self.csr_matrix = sparse.csr_matrix(input)
+        self.digraph_csr = sparse.csr_matrix(input)
 
-        m, n = self.csr_matrix.shape
+        m, n = self.digraph_csr.shape
         if n != m:
             raise ValueError('matrix must be square')
 
@@ -65,7 +65,7 @@ class Digraph:
         """
         # Find the communication classes (strongly connected components)
         self._num_comm_classes, self._comm_classes_proj = \
-            csgraph.connected_components(self.csr_matrix, connection='strong')
+            csgraph.connected_components(self.digraph_csr, connection='strong')
 
     @property
     def num_comm_classes(self):
@@ -80,7 +80,7 @@ class Digraph:
         return self._comm_classes_proj
 
     @property
-    def is_irreducible(self):
+    def is_strongly_connected(self):
         return (self.num_comm_classes == 1)
 
     def _find_rec_classes(self):
@@ -89,21 +89,24 @@ class Digraph:
         the recurrent communication classes.
 
         """
-        # Directed graph on the quotient set (the set of communication classes)
-        # represented by dictionary of sets
-        digraph_quo = {k: set() for k in range(self.num_comm_classes)}
+        # Condensed digraph (the digraph on the SCCs)
+        # represented by sparse matrix of lil form
+        digraph_condensed_lil = sparse.lil_matrix(
+            (self.num_comm_classes, self.num_comm_classes), dtype=bool
+            )
 
         comm_classes_proj = self.comm_classes_proj
-        for state_from, state_to in _csr_matrix_indices(self.csr_matrix):
+        for state_from, state_to in _csr_matrix_indices(self.digraph_csr):
             comm_class_from, comm_class_to = \
                 comm_classes_proj[state_from], comm_classes_proj[state_to]
             if comm_class_from != comm_class_to:
-                digraph_quo[comm_class_from].add(comm_class_to)
+                digraph_condensed_lil[comm_class_from, comm_class_to] = True
 
         # A recurrent class is a communication class such that none of
         # its members communicates with states in other classes
         self._rec_classes_labels = \
-            [k for k, val in digraph_quo.items() if len(val) == 0]
+            [k for k in range(self.num_comm_classes)
+             if len(digraph_condensed_lil.rows[k]) == 0]
 
     @property
     def rec_classes_labels(self):
@@ -125,7 +128,7 @@ class Digraph:
             List of lists containing the communication classes
 
         """
-        if self.is_irreducible:
+        if self.is_strongly_connected:
             return [list(range(self.n))]
         else:
             return [np.where(self.comm_classes_proj == k)[0].tolist()
@@ -141,30 +144,30 @@ class Digraph:
             List of lists containing the recurrent classes
 
         """
-        if self.is_irreducible:
+        if self.is_strongly_connected:
             return [list(range(self.n))]
         else:
             return [np.where(self.comm_classes_proj == k)[0].tolist()
                     for k in self.rec_classes_labels]
 
     def period(self):
-        if not self.is_irreducible:
+        if not self.is_strongly_connected:
             raise NotImplementedError(
                 'period is not defined for a reducible graph'
                 )
 
-        if np.any(self.csr_matrix.diagonal() > 0):
+        if np.any(self.digraph_csr.diagonal() > 0):
             return 1, np.zeros(self.n)
 
         # Construct a breadth first tree rooted at 0
         node_order, predecessors = \
-            csgraph.breadth_first_order(self.csr_matrix, i_start=0)
-        tree_csr = \
-            csgraph.reconstruct_path(self.csr_matrix, predecessors).astype(bool)
+            csgraph.breadth_first_order(self.digraph_csr, i_start=0)
+        bf_tree_csr = \
+            csgraph.reconstruct_path(self.digraph_csr, predecessors)
 
         # Edges not belonging to tree_csr
-        non_tree_csr = self.csr_matrix - tree_csr
-        non_tree_csr.eliminate_zeros()
+        non_bf_tree_csr = self.digraph_csr - bf_tree_csr
+        non_bf_tree_csr.eliminate_zeros()
 
         # Distance to 0
         level = np.zeros(self.n, dtype=int)
@@ -173,8 +176,8 @@ class Digraph:
 
         # Determine the period
         d = 0
-        for edge_from, edge_to in _csr_matrix_indices(non_tree_csr):
-            value = level[edge_from] - level[edge_to] + 1
+        for node_from, node_to in _csr_matrix_indices(non_bf_tree_csr):
+            value = level[node_from] - level[node_to] + 1
             d = gcd(d, value)
 
         return d, level % d
