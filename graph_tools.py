@@ -52,6 +52,15 @@ class Digraph:
         self._comm_classes_proj = None
         self._rec_classes_labels = None
 
+    def subgraph(self, nodes):
+        D = sparse.csr_matrix(
+            (np.ones(len(nodes), dtype=int), (nodes, nodes)),
+            shape=(self.n, self.n)
+            )
+        subgraph_csr = D.dot(self.digraph_csr).dot(D)
+        h = self.__class__(subgraph_csr)
+        return h
+
     def _find_comm_classes(self):
         """
         Set ``self._num_comm_classes`` and ``self._comm_classes_proj``
@@ -151,6 +160,17 @@ class Digraph:
                     for k in self.rec_classes_labels]
 
     def period(self):
+        r"""
+        Return the period of the digraph.
+        """
+        # Degenerate graph with a single node
+        # csgraph.reconstruct_path would raise an exception
+        if self.n == 1:
+            if self.digraph_csr[0, 0] == 0:  # No edge
+                return 0, np.zeros(self.n)
+            else:  # Self loop
+                return 1, np.zeros(self.n)
+
         if not self.is_strongly_connected:
             raise NotImplementedError(
                 'period is not defined for a reducible graph'
@@ -159,15 +179,15 @@ class Digraph:
         if np.any(self.digraph_csr.diagonal() > 0):
             return 1, np.zeros(self.n)
 
-        # Construct a breadth first tree rooted at 0
+        # Construct a breadth-first search tree rooted at 0
         node_order, predecessors = \
             csgraph.breadth_first_order(self.digraph_csr, i_start=0)
-        bf_tree_csr = \
+        bfs_tree_csr = \
             csgraph.reconstruct_path(self.digraph_csr, predecessors)
 
         # Edges not belonging to tree_csr
-        non_bf_tree_csr = self.digraph_csr - bf_tree_csr
-        non_bf_tree_csr.eliminate_zeros()
+        non_bfs_tree_csr = self.digraph_csr - bfs_tree_csr
+        non_bfs_tree_csr.eliminate_zeros()
 
         # Distance to 0
         level = np.zeros(self.n, dtype=int)
@@ -176,7 +196,7 @@ class Digraph:
 
         # Determine the period
         d = 0
-        for node_from, node_to in _csr_matrix_indices(non_bf_tree_csr):
+        for node_from, node_to in _csr_matrix_indices(non_bfs_tree_csr):
             value = level[node_from] - level[node_to] + 1
             d = gcd(d, value)
 

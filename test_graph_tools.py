@@ -45,6 +45,26 @@ class Graphs:
             }
         self.strongly_connected_graph_dicts.append(graph_dict)
 
+        # Degenrate graph with no edge
+        graph_dict = {
+            'A': np.array([[0]]),
+            'comm_classes': [list(range(1))],
+            'rec_classes': [list(range(1))],
+            'is_strongly_connected': True,
+            'period': 0,
+            }
+        self.strongly_connected_graph_dicts.append(graph_dict)
+
+        # Degenrate graph with self loop
+        graph_dict = {
+            'A': np.array([[1]]),
+            'comm_classes': [list(range(1))],
+            'rec_classes': [list(range(1))],
+            'is_strongly_connected': True,
+            'period': 1,
+            }
+        self.strongly_connected_graph_dicts.append(graph_dict)
+
         self.graph_dicts = \
             self.strongly_connected_graph_dicts + \
             self.not_strongly_connected_graph_dicts
