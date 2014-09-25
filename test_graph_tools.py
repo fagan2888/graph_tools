@@ -53,9 +53,9 @@ class Graphs:
             'strongly_connected_components': [list(range(1))],
             'sink_strongly_connected_components': [list(range(1))],
             'is_strongly_connected': True,
-            'period': 0,
-            'is_aperiodic': False,
-            'cyclic_components': [],
+            'period': 1,
+            'is_aperiodic': True,
+            'cyclic_components': [[0]],
         }
         self.strongly_connected_graph_dicts.append(graph_dict)
 

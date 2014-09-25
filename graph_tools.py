@@ -177,11 +177,11 @@ class DiGraph:
         r"""
         Return the period of the digraph.
         """
-        # Degenerate graph with a single node
+        # Degenerate graph with a single node (which is strongly connected)
         # csgraph.reconstruct_path would raise an exception
         if self.n == 1:
-            if self.graph_csr[0, 0] == 0:  # No edge
-                self._period = 0
+            if self.graph_csr[0, 0] == 0:  # No edge: "trivial graph"
+                self._period = 1  # Any universally accepted definition?
                 self._cyclic_components_proj = np.zeros(self.n)
                 return None
             else:  # Self loop
