@@ -16,177 +16,197 @@ from scipy.sparse import csgraph
 from fractions import gcd
 
 
-class Digraph:
+class DiGraph:
     r"""
     Class for directed graphs. In particular, implement methods that
-    find communication classes and reccurent classes.
+    find strongly connected components.
 
     Parameters
     ----------
-    input_array : array_like(float, ndim=2)
-        Array representing a stochastic matrix. Must be of shape n x n.
+    adj_matrix : array_like(ndim=2)
+        Adjacency matrix representing a directed graph. Must be of shape n x n.
+
+    weighted : bool
 
     Attributes
     ----------
     is_strongly_connected : bool
-        Indicate whether the array is an irreducible matrix.
+        Indicate whether the digraph is strongly connected.
 
-    num_comm_classes : int
-        Number of communication classes.
+    num_strongly_connected_components : int
+        Number of strongly connected components.
 
-    num_rec_classes : int
-        Number of recurrent classes.
+    num_sink_strongly_connected_components : int
+        Number of sink strongly connected components.
+
+    is_aperiodic : bool
+        Indicate whether the digraph is aperiodic.
+
+    period : int
+        Period of the digraph. Defined only for a strongly connected digraph.
 
     """
 
-    def __init__(self, input):
-        self.digraph_csr = sparse.csr_matrix(input)
+    def __init__(self, adj_matrix, weighted=False):
+        if weighted:
+            dtype = None
+        else:
+            dtype = bool
+        self.graph_csr = sparse.csr_matrix(adj_matrix, dtype=dtype)
 
-        m, n = self.digraph_csr.shape
+        m, n = self.graph_csr.shape
         if n != m:
-            raise ValueError('matrix must be square')
+            raise ValueError('input matrix must be square')
 
-        self.n = n
+        self.n = n  # Number of nodes
 
-        self._num_comm_classes = None
-        self._comm_classes_proj = None
-        self._rec_classes_labels = None
+        self._num_scc = None
+        self._scc_proj = None
+        self._sink_scc_labels = None
+
+        self._period = None
 
     def subgraph(self, nodes):
         D = sparse.csr_matrix(
             (np.ones(len(nodes), dtype=int), (nodes, nodes)),
             shape=(self.n, self.n)
-            )
-        subgraph_csr = D.dot(self.digraph_csr).dot(D)
+        )
+        subgraph_csr = D.dot(self.graph_csr).dot(D)
         h = self.__class__(subgraph_csr)
         return h
 
-    def _find_comm_classes(self):
+    def _find_scc(self):
         """
-        Set ``self._num_comm_classes`` and ``self._comm_classes_proj``
+        Set ``self._num_scc`` and ``self._scc_proj``
         by calling ``scipy.sparse.csgraph.connected_components``:
         * docs.scipy.org/doc/scipy/reference/sparse.csgraph.html
         * github.com/scipy/scipy/blob/master/scipy/sparse/csgraph/_traversal.pyx
 
-        ``self._comm_classes_proj`` is a list of length `n` that assigns
-        to each index the label of the communication class to which it belongs.
+        ``self._scc_proj`` is a list of length `n` that assigns to each node
+        the label of the strongly connected component to which it belongs.
 
         """
-        # Find the communication classes (strongly connected components)
-        self._num_comm_classes, self._comm_classes_proj = \
-            csgraph.connected_components(self.digraph_csr, connection='strong')
+        # Find the strongly connected components
+        self._num_scc, self._scc_proj = \
+            csgraph.connected_components(self.graph_csr, connection='strong')
 
     @property
-    def num_comm_classes(self):
-        if self._num_comm_classes is None:
-            self._find_comm_classes()
-        return self._num_comm_classes
+    def num_strongly_connected_components(self):
+        if self._num_scc is None:
+            self._find_scc()
+        return self._num_scc
 
     @property
-    def comm_classes_proj(self):
-        if self._comm_classes_proj is None:
-            self._find_comm_classes()
-        return self._comm_classes_proj
+    def scc_proj(self):
+        if self._scc_proj is None:
+            self._find_scc()
+        return self._scc_proj
 
     @property
     def is_strongly_connected(self):
-        return (self.num_comm_classes == 1)
+        return (self.num_strongly_connected_components == 1)
 
-    def _find_rec_classes(self):
+    def _find_sink_scc(self):
         """
-        Set self._rec_classes_labels, which is a list containing the labels of
-        the recurrent communication classes.
+        Set self._sink_scc_labels, which is a list containing the labels of
+        the strongly connected components.
 
         """
         # Condensed digraph (the digraph on the SCCs)
         # represented by sparse matrix of lil form
-        digraph_condensed_lil = sparse.lil_matrix(
-            (self.num_comm_classes, self.num_comm_classes), dtype=bool
-            )
+        graph_condensed_lil = sparse.lil_matrix(
+            (self.num_strongly_connected_components,
+             self.num_strongly_connected_components), dtype=bool
+        )
 
-        comm_classes_proj = self.comm_classes_proj
-        for state_from, state_to in _csr_matrix_indices(self.digraph_csr):
-            comm_class_from, comm_class_to = \
-                comm_classes_proj[state_from], comm_classes_proj[state_to]
-            if comm_class_from != comm_class_to:
-                digraph_condensed_lil[comm_class_from, comm_class_to] = True
+        scc_proj = self.scc_proj
+        for node_from, node_to in _csr_matrix_indices(self.graph_csr):
+            scc_from, scc_to = scc_proj[node_from], scc_proj[node_to]
+            if scc_from != scc_to:
+                graph_condensed_lil[scc_from, scc_to] = True
 
-        # A recurrent class is a communication class such that none of
-        # its members communicates with states in other classes
-        self._rec_classes_labels = \
-            [k for k in range(self.num_comm_classes)
-             if len(digraph_condensed_lil.rows[k]) == 0]
-
-    @property
-    def rec_classes_labels(self):
-        if self._rec_classes_labels is None:
-            self._find_rec_classes()
-        return self._rec_classes_labels
+        # A sink SCC is a SCC such that none of its members is strongly
+        # connected to nodes in other SCCs
+        self._sink_scc_labels = \
+            [k for k in range(self.num_strongly_connected_components)
+             if len(graph_condensed_lil.rows[k]) == 0]
 
     @property
-    def num_rec_classes(self):
-        return len(self.rec_classes_labels)
+    def sink_scc_labels(self):
+        if self._sink_scc_labels is None:
+            self._find_sink_scc()
+        return self._sink_scc_labels
 
-    def comm_classes(self):
+    @property
+    def num_sink_strongly_connected_components(self):
+        return len(self.sink_scc_labels)
+
+    def strongly_connected_components(self):
         r"""
-        Return the communication classes (strongly connected components).
+        Return the strongly connected components.
 
         Returns
         -------
         list(list(int))
-            List of lists containing the communication classes
+            List of lists containing the strongly connected components
 
         """
         if self.is_strongly_connected:
             return [list(range(self.n))]
         else:
-            return [np.where(self.comm_classes_proj == k)[0].tolist()
-                    for k in range(self.num_comm_classes)]
+            return [np.where(self.scc_proj == k)[0].tolist()
+                    for k in range(self.num_strongly_connected_components)]
 
-    def rec_classes(self):
+    def sink_strongly_connected_components(self):
         r"""
-        Return the recurrent classes (closed communication classes).
+        Return the sink strongly connected components.
 
         Returns
         -------
         list(list(int))
-            List of lists containing the recurrent classes
+            List of lists containing the sink strongly connected components
 
         """
         if self.is_strongly_connected:
             return [list(range(self.n))]
         else:
-            return [np.where(self.comm_classes_proj == k)[0].tolist()
-                    for k in self.rec_classes_labels]
+            return [np.where(self.scc_proj == k)[0].tolist()
+                    for k in self.sink_scc_labels]
 
-    def period(self):
+    def _compute_period(self):
         r"""
         Return the period of the digraph.
         """
         # Degenerate graph with a single node
         # csgraph.reconstruct_path would raise an exception
         if self.n == 1:
-            if self.digraph_csr[0, 0] == 0:  # No edge
-                return 0, np.zeros(self.n)
+            if self.graph_csr[0, 0] == 0:  # No edge
+                self._period = 0
+                self._cyclic_components_proj = np.zeros(self.n)
+                return None
             else:  # Self loop
-                return 1, np.zeros(self.n)
+                self._period = 1
+                self._cyclic_components_proj = np.zeros(self.n)
+                return None
 
         if not self.is_strongly_connected:
             raise NotImplementedError(
-                'period is not defined for a reducible graph'
-                )
+                'period is not defined for a non strongly-connected digraph'
+            )
 
-        if np.any(self.digraph_csr.diagonal() > 0):
-            return 1, np.zeros(self.n)
+        if np.any(self.graph_csr.diagonal() > 0):
+            self._period = 1
+            self._cyclic_components_proj = np.zeros(self.n)
+            return None
 
         # Construct a breadth-first search tree rooted at 0
         node_order, predecessors = \
-            csgraph.breadth_first_order(self.digraph_csr, i_start=0)
+            csgraph.breadth_first_order(self.graph_csr, i_start=0)
         bfs_tree_csr = \
-            csgraph.reconstruct_path(self.digraph_csr, predecessors)
+            csgraph.reconstruct_path(self.graph_csr, predecessors)
 
         # Edges not belonging to tree_csr
-        non_bfs_tree_csr = self.digraph_csr - bfs_tree_csr
+        non_bfs_tree_csr = self.graph_csr - bfs_tree_csr
         non_bfs_tree_csr.eliminate_zeros()
 
         # Distance to 0
@@ -199,8 +219,30 @@ class Digraph:
         for node_from, node_to in _csr_matrix_indices(non_bfs_tree_csr):
             value = level[node_from] - level[node_to] + 1
             d = gcd(d, value)
+            if d == 1:
+                self._period = 1
+                self._cyclic_components_proj = np.zeros(self.n)
+                return None
 
-        return d, level % d
+        self._period = d
+        self._cyclic_components_proj = level % d
+
+    @property
+    def period(self):
+        if self._period is None:
+            self._compute_period()
+        return self._period
+
+    @property
+    def is_aperiodic(self):
+        return (self.period == 1)
+
+    def cyclic_components(self):
+        if self.is_aperiodic:
+            return [list(range(self.n))]
+        else:
+            return [np.where(self._cyclic_components_proj == k)[0].tolist()
+                    for k in range(self.period)]
 
 
 def _csr_matrix_indices(S):

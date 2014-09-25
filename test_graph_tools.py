@@ -10,7 +10,7 @@ import numpy as np
 import nose
 from nose.tools import eq_, ok_
 
-from graph_tools import Digraph
+from graph_tools import DiGraph
 
 
 class Graphs:
@@ -22,47 +22,53 @@ class Graphs:
 
         graph_dict = {
             'A': np.array([[1, 0], [0, 1]]),
-            'comm_classes': [[0], [1]],
-            'rec_classes': [[0], [1]],
+            'strongly_connected_components': [[0], [1]],
+            'sink_strongly_connected_components': [[0], [1]],
             'is_strongly_connected': False,
-            }
+        }
         self.not_strongly_connected_graph_dicts.append(graph_dict)
 
         graph_dict = {
             'A': np.array([[1, 0, 0], [1, 0, 1], [0, 0, 1]]),
-            'comm_classes': [[0], [1], [2]],
-            'rec_classes': [[0], [2]],
+            'strongly_connected_components': [[0], [1], [2]],
+            'sink_strongly_connected_components': [[0], [2]],
             'is_strongly_connected': False,
-            }
+        }
         self.not_strongly_connected_graph_dicts.append(graph_dict)
 
         graph_dict = {
             'A': np.array([[0, 1], [1, 0]]),
-            'comm_classes': [list(range(2))],
-            'rec_classes': [list(range(2))],
+            'strongly_connected_components': [list(range(2))],
+            'sink_strongly_connected_components': [list(range(2))],
             'is_strongly_connected': True,
             'period': 2,
-            }
+            'is_aperiodic': False,
+            'cyclic_components': [[0], [1]],
+        }
         self.strongly_connected_graph_dicts.append(graph_dict)
 
         # Degenrate graph with no edge
         graph_dict = {
             'A': np.array([[0]]),
-            'comm_classes': [list(range(1))],
-            'rec_classes': [list(range(1))],
+            'strongly_connected_components': [list(range(1))],
+            'sink_strongly_connected_components': [list(range(1))],
             'is_strongly_connected': True,
             'period': 0,
-            }
+            'is_aperiodic': False,
+            'cyclic_components': [],
+        }
         self.strongly_connected_graph_dicts.append(graph_dict)
 
         # Degenrate graph with self loop
         graph_dict = {
             'A': np.array([[1]]),
-            'comm_classes': [list(range(1))],
-            'rec_classes': [list(range(1))],
+            'strongly_connected_components': [list(range(1))],
+            'sink_strongly_connected_components': [list(range(1))],
             'is_strongly_connected': True,
             'period': 1,
-            }
+            'is_aperiodic': True,
+            'cyclic_components': [[0]],
+        }
         self.strongly_connected_graph_dicts.append(graph_dict)
 
         self.graph_dicts = \
@@ -70,47 +76,62 @@ class Graphs:
             self.not_strongly_connected_graph_dicts
 
 
-class TestDigraph:
+class TestDiGraph:
     """Test the methods in Digraph"""
 
     def setUp(self):
         """Setup Digraph instances"""
         self.graphs = Graphs()
         for graph_dict in self.graphs.graph_dicts:
-            graph_dict['A'] = Digraph(graph_dict['A'])
+            graph_dict['DiGraph'] = DiGraph(graph_dict['A'])
 
-    def test_comm_classes(self):
+    def test_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
-            eq_(sorted(graph_dict['A'].comm_classes()),
-                sorted(graph_dict['comm_classes']))
+            eq_(sorted(graph_dict['DiGraph'].strongly_connected_components()),
+                sorted(graph_dict['strongly_connected_components']))
 
-    def test_num_comm_classes(self):
+    def test_num_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
-            eq_(graph_dict['A'].num_comm_classes,
-                len(graph_dict['comm_classes']))
+            eq_(graph_dict['DiGraph'].num_strongly_connected_components,
+                len(graph_dict['strongly_connected_components']))
 
-    def test_rec_classes(self):
+    def test_sink_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
-            eq_(sorted(graph_dict['A'].rec_classes()),
-                sorted(graph_dict['rec_classes']))
+            eq_(sorted(graph_dict['DiGraph'].sink_strongly_connected_components()),
+                sorted(graph_dict['sink_strongly_connected_components']))
 
-    def test_num_rec_classes(self):
+    def test_num_sink_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
-            eq_(graph_dict['A'].num_rec_classes,
-                len(graph_dict['rec_classes']))
+            eq_(graph_dict['DiGraph'].num_sink_strongly_connected_components,
+                len(graph_dict['sink_strongly_connected_components']))
 
     def test_is_strongly_connected(self):
         for graph_dict in self.graphs.graph_dicts:
-            eq_(graph_dict['A'].is_strongly_connected,
+            eq_(graph_dict['DiGraph'].is_strongly_connected,
                 graph_dict['is_strongly_connected'])
 
     def test_period(self):
         for graph_dict in self.graphs.graph_dicts:
             try:
-                period, cyc_classes_labels = graph_dict['A'].period()
-                eq_(period, graph_dict['period'])
+                eq_(graph_dict['DiGraph'].period, graph_dict['period'])
             except NotImplementedError:
-                eq_(graph_dict['A'].is_strongly_connected, False)
+                eq_(graph_dict['DiGraph'].is_strongly_connected, False)
+
+    def test_is_aperiodic(self):
+        for graph_dict in self.graphs.graph_dicts:
+            try:
+                eq_(graph_dict['DiGraph'].is_aperiodic,
+                    graph_dict['is_aperiodic'])
+            except NotImplementedError:
+                eq_(graph_dict['DiGraph'].is_strongly_connected, False)
+
+    def test_cyclic_components(self):
+        for graph_dict in self.graphs.graph_dicts:
+            try:
+                eq_(sorted(graph_dict['DiGraph'].cyclic_components()),
+                    sorted(graph_dict['cyclic_components']))
+            except NotImplementedError:
+                eq_(graph_dict['DiGraph'].is_strongly_connected, False)
 
 
 if __name__ == '__main__':
