@@ -6,8 +6,7 @@ Author: Daisuke Oyama
 Tools for dealing with a graph (preliminary).
 
 TODO:
-* Modify the docstrings
-* Change the names to fit in the context of graph theory
+* Elaborate the docstrings
 
 """
 import numpy as np
@@ -30,6 +29,9 @@ class DiGraph:
 
     Attributes
     ----------
+    csgraph : csr_matrix
+        Compressed sparse representation of the digraph.
+
     is_strongly_connected : bool
         Indicate whether the digraph is strongly connected.
 
@@ -52,9 +54,9 @@ class DiGraph:
             dtype = None
         else:
             dtype = bool
-        self.graph_csr = sparse.csr_matrix(adj_matrix, dtype=dtype)
+        self.csgraph = sparse.csr_matrix(adj_matrix, dtype=dtype)
 
-        m, n = self.graph_csr.shape
+        m, n = self.csgraph.shape
         if n != m:
             raise ValueError('input matrix must be square')
 
@@ -67,11 +69,7 @@ class DiGraph:
         self._period = None
 
     def subgraph(self, nodes):
-        D = sparse.csr_matrix(
-            (np.ones(len(nodes), dtype=int), (nodes, nodes)),
-            shape=(self.n, self.n)
-        )
-        subgraph_csr = D.dot(self.graph_csr).dot(D)
+        subgraph_csr = self.csgraph[nodes, :][:, nodes]
         h = self.__class__(subgraph_csr)
         return h
 
@@ -88,7 +86,7 @@ class DiGraph:
         """
         # Find the strongly connected components
         self._num_scc, self._scc_proj = \
-            csgraph.connected_components(self.graph_csr, connection='strong')
+            csgraph.connected_components(self.csgraph, connection='strong')
 
     @property
     def num_strongly_connected_components(self):
@@ -120,7 +118,7 @@ class DiGraph:
         )
 
         scc_proj = self.scc_proj
-        for node_from, node_to in _csr_matrix_indices(self.graph_csr):
+        for node_from, node_to in _csr_matrix_indices(self.csgraph):
             scc_from, scc_to = scc_proj[node_from], scc_proj[node_to]
             if scc_from != scc_to:
                 graph_condensed_lil[scc_from, scc_to] = True
@@ -175,12 +173,13 @@ class DiGraph:
 
     def _compute_period(self):
         r"""
-        Return the period of the digraph.
+        Set ``self._period`` and ``self._cyclic_components_proj``.
+
         """
         # Degenerate graph with a single node (which is strongly connected)
         # csgraph.reconstruct_path would raise an exception
         if self.n == 1:
-            if self.graph_csr[0, 0] == 0:  # No edge: "trivial graph"
+            if self.csgraph[0, 0] == 0:  # No edge: "trivial graph"
                 self._period = 1  # Any universally accepted definition?
                 self._cyclic_components_proj = np.zeros(self.n)
                 return None
@@ -194,19 +193,19 @@ class DiGraph:
                 'period is not defined for a non strongly-connected digraph'
             )
 
-        if np.any(self.graph_csr.diagonal() > 0):
+        if np.any(self.csgraph.diagonal() > 0):
             self._period = 1
             self._cyclic_components_proj = np.zeros(self.n)
             return None
 
         # Construct a breadth-first search tree rooted at 0
         node_order, predecessors = \
-            csgraph.breadth_first_order(self.graph_csr, i_start=0)
+            csgraph.breadth_first_order(self.csgraph, i_start=0)
         bfs_tree_csr = \
-            csgraph.reconstruct_path(self.graph_csr, predecessors)
+            csgraph.reconstruct_path(self.csgraph, predecessors)
 
         # Edges not belonging to tree_csr
-        non_bfs_tree_csr = self.graph_csr - bfs_tree_csr
+        non_bfs_tree_csr = self.csgraph - bfs_tree_csr
         non_bfs_tree_csr.eliminate_zeros()
 
         # Distance to 0
@@ -238,6 +237,15 @@ class DiGraph:
         return (self.period == 1)
 
     def cyclic_components(self):
+        r"""
+        Return the cyclic components.
+
+        Returns
+        -------
+        list(list(int))
+            List of lists containing the cyclic components
+
+        """
         if self.is_aperiodic:
             return [list(range(self.n))]
         else:
@@ -248,6 +256,7 @@ class DiGraph:
 def _csr_matrix_indices(S):
     """
     Generate the indices of nonzero entries of a csr_matrix S
+
     """
     m, n = S.shape
 
