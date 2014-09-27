@@ -181,11 +181,11 @@ class DiGraph:
         if self.n == 1:
             if self.csgraph[0, 0] == 0:  # No edge: "trivial graph"
                 self._period = 1  # Any universally accepted definition?
-                self._cyclic_components_proj = np.zeros(self.n)
+                self._cyclic_components_proj = np.zeros(self.n, dtype=int)
                 return None
             else:  # Self loop
                 self._period = 1
-                self._cyclic_components_proj = np.zeros(self.n)
+                self._cyclic_components_proj = np.zeros(self.n, dtype=int)
                 return None
 
         if not self.is_strongly_connected:
@@ -220,7 +220,7 @@ class DiGraph:
             d = gcd(d, value)
             if d == 1:
                 self._period = 1
-                self._cyclic_components_proj = np.zeros(self.n)
+                self._cyclic_components_proj = np.zeros(self.n, dtype=int)
                 return None
 
         self._period = d
