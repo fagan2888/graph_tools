@@ -125,9 +125,9 @@ class DiGraph:
 
         # A sink SCC is a SCC such that none of its members is strongly
         # connected to nodes in other SCCs
+        # Those k's such that graph_condensed_lil.rows[k] == []
         self._sink_scc_labels = \
-            [k for k in range(self.num_strongly_connected_components)
-             if len(graph_condensed_lil.rows[k]) == 0]
+            np.where(np.logical_not(graph_condensed_lil.rows))[0]
 
     @property
     def sink_scc_labels(self):
@@ -150,9 +150,9 @@ class DiGraph:
 
         """
         if self.is_strongly_connected:
-            return [list(range(self.n))]
+            return [np.arange(self.n)]
         else:
-            return [np.where(self.scc_proj == k)[0].tolist()
+            return [np.where(self.scc_proj == k)[0]
                     for k in range(self.num_strongly_connected_components)]
 
     def sink_strongly_connected_components(self):
@@ -166,10 +166,10 @@ class DiGraph:
 
         """
         if self.is_strongly_connected:
-            return [list(range(self.n))]
+            return [np.arange(self.n)]
         else:
-            return [np.where(self.scc_proj == k)[0].tolist()
-                    for k in self.sink_scc_labels]
+            scc = self.strongly_connected_components()
+            return [scc[k] for k in self.sink_scc_labels.tolist()]
 
     def _compute_period(self):
         r"""
@@ -195,7 +195,7 @@ class DiGraph:
 
         if np.any(self.csgraph.diagonal() > 0):
             self._period = 1
-            self._cyclic_components_proj = np.zeros(self.n)
+            self._cyclic_components_proj = np.zeros(self.n, dtype=int)
             return None
 
         # Construct a breadth-first search tree rooted at 0
@@ -247,9 +247,9 @@ class DiGraph:
 
         """
         if self.is_aperiodic:
-            return [list(range(self.n))]
+            return [np.arange(self.n)]
         else:
-            return [np.where(self._cyclic_components_proj == k)[0].tolist()
+            return [np.where(self._cyclic_components_proj == k)[0]
                     for k in range(self.period)]
 
 

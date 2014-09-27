@@ -7,6 +7,7 @@ Tests for graph_tools.py
 """
 import sys
 import numpy as np
+from numpy import array_equal
 import nose
 from nose.tools import eq_, ok_
 
@@ -22,52 +23,56 @@ class Graphs:
 
         graph_dict = {
             'A': np.array([[1, 0], [0, 1]]),
-            'strongly_connected_components': [[0], [1]],
-            'sink_strongly_connected_components': [[0], [1]],
+            'strongly_connected_components':
+                [np.array([0]), np.array([1])],
+            'sink_strongly_connected_components':
+                [np.array([0]), np.array([1])],
             'is_strongly_connected': False,
         }
         self.not_strongly_connected_graph_dicts.append(graph_dict)
 
         graph_dict = {
             'A': np.array([[1, 0, 0], [1, 0, 1], [0, 0, 1]]),
-            'strongly_connected_components': [[0], [1], [2]],
-            'sink_strongly_connected_components': [[0], [2]],
+            'strongly_connected_components':
+                [np.array([0]), np.array([1]), np.array([2])],
+            'sink_strongly_connected_components':
+                [np.array([0]), np.array([2])],
             'is_strongly_connected': False,
         }
         self.not_strongly_connected_graph_dicts.append(graph_dict)
 
         graph_dict = {
             'A': np.array([[0, 1], [1, 0]]),
-            'strongly_connected_components': [list(range(2))],
-            'sink_strongly_connected_components': [list(range(2))],
+            'strongly_connected_components': [np.arange(2)],
+            'sink_strongly_connected_components': [np.arange(2)],
             'is_strongly_connected': True,
             'period': 2,
             'is_aperiodic': False,
-            'cyclic_components': [[0], [1]],
+            'cyclic_components': [np.array([0]), np.array([1])],
         }
         self.strongly_connected_graph_dicts.append(graph_dict)
 
         # Degenrate graph with no edge
         graph_dict = {
             'A': np.array([[0]]),
-            'strongly_connected_components': [list(range(1))],
-            'sink_strongly_connected_components': [list(range(1))],
+            'strongly_connected_components': [np.arange(1)],
+            'sink_strongly_connected_components': [np.arange(1)],
             'is_strongly_connected': True,
             'period': 1,
             'is_aperiodic': True,
-            'cyclic_components': [[0]],
+            'cyclic_components': [np.array([0])],
         }
         self.strongly_connected_graph_dicts.append(graph_dict)
 
         # Degenrate graph with self loop
         graph_dict = {
             'A': np.array([[1]]),
-            'strongly_connected_components': [list(range(1))],
-            'sink_strongly_connected_components': [list(range(1))],
+            'strongly_connected_components': [np.arange(1)],
+            'sink_strongly_connected_components': [np.arange(1)],
             'is_strongly_connected': True,
             'period': 1,
             'is_aperiodic': True,
-            'cyclic_components': [[0]],
+            'cyclic_components': [np.array([0])],
         }
         self.strongly_connected_graph_dicts.append(graph_dict)
 
@@ -87,8 +92,8 @@ class TestDiGraph:
 
     def test_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
-            eq_(sorted(graph_dict['DiGraph'].strongly_connected_components()),
-                sorted(graph_dict['strongly_connected_components']))
+            array_equal(sorted(graph_dict['DiGraph'].strongly_connected_components()),
+                        sorted(graph_dict['strongly_connected_components']))
 
     def test_num_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
@@ -97,8 +102,8 @@ class TestDiGraph:
 
     def test_sink_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
-            eq_(sorted(graph_dict['DiGraph'].sink_strongly_connected_components()),
-                sorted(graph_dict['sink_strongly_connected_components']))
+            array_equal(sorted(graph_dict['DiGraph'].sink_strongly_connected_components()),
+                        sorted(graph_dict['sink_strongly_connected_components']))
 
     def test_num_sink_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
@@ -128,8 +133,8 @@ class TestDiGraph:
     def test_cyclic_components(self):
         for graph_dict in self.graphs.graph_dicts:
             try:
-                eq_(sorted(graph_dict['DiGraph'].cyclic_components()),
-                    sorted(graph_dict['cyclic_components']))
+                array_equal(sorted(graph_dict['DiGraph'].cyclic_components()),
+                            sorted(graph_dict['cyclic_components']))
             except NotImplementedError:
                 eq_(graph_dict['DiGraph'].is_strongly_connected, False)
 
