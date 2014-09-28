@@ -104,15 +104,12 @@ class DiGraph:
     def is_strongly_connected(self):
         return (self.num_strongly_connected_components == 1)
 
-    def _find_sink_scc(self):
+    def _condensation_lil(self):
         """
-        Set self._sink_scc_labels, which is a list containing the labels of
-        the strongly connected components.
-
+        Return the sparse matrix representation of the condensation digraph
+        in lil format
         """
-        # Condensed digraph (the digraph on the SCCs)
-        # represented by sparse matrix of lil form
-        graph_condensed_lil = sparse.lil_matrix(
+        condensation_lil = sparse.lil_matrix(
             (self.num_strongly_connected_components,
              self.num_strongly_connected_components), dtype=bool
         )
@@ -121,13 +118,23 @@ class DiGraph:
         for node_from, node_to in _csr_matrix_indices(self.csgraph):
             scc_from, scc_to = scc_proj[node_from], scc_proj[node_to]
             if scc_from != scc_to:
-                graph_condensed_lil[scc_from, scc_to] = True
+                condensation_lil[scc_from, scc_to] = True
+
+        return condensation_lil
+
+    def _find_sink_scc(self):
+        """
+        Set self._sink_scc_labels, which is a list containing the labels of
+        the strongly connected components.
+
+        """
+        condensation_lil = self._condensation_lil()
 
         # A sink SCC is a SCC such that none of its members is strongly
         # connected to nodes in other SCCs
         # Those k's such that graph_condensed_lil.rows[k] == []
         self._sink_scc_labels = \
-            np.where(np.logical_not(graph_condensed_lil.rows))[0]
+            np.where(np.logical_not(condensation_lil.rows))[0]
 
     @property
     def sink_scc_labels(self):
@@ -168,8 +175,8 @@ class DiGraph:
         if self.is_strongly_connected:
             return [np.arange(self.n)]
         else:
-            scc = self.strongly_connected_components()
-            return [scc[k] for k in self.sink_scc_labels.tolist()]
+            return [np.where(self.scc_proj == k)[0]
+                    for k in self.sink_scc_labels.tolist()]
 
     def _compute_period(self):
         r"""
