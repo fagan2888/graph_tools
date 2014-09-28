@@ -197,7 +197,7 @@ class DiGraph:
 
         if not self.is_strongly_connected:
             raise NotImplementedError(
-                'period is not defined for a non strongly-connected digraph'
+                'Not defined for a non strongly-connected digraph'
             )
 
         if np.any(self.csgraph.diagonal() > 0):
