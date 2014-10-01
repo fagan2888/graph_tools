@@ -123,7 +123,7 @@ class DMC(object):
 
     @property
     def communication_classes(self):
-        return self.digraph.strongly_connected_components()
+        return self.digraph.strongly_connected_components
 
     @property
     def num_recurrent_classes(self):
@@ -131,7 +131,7 @@ class DMC(object):
 
     @property
     def recurrent_classes(self):
-        return self.digraph.sink_strongly_connected_components()
+        return self.digraph.sink_strongly_connected_components
 
     @property
     def is_aperiodic(self):

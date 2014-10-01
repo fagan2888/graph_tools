@@ -92,7 +92,7 @@ class TestDiGraph:
 
     def test_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
-            array_equal(sorted(graph_dict['DiGraph'].strongly_connected_components()),
+            array_equal(sorted(graph_dict['DiGraph'].strongly_connected_components),
                         sorted(graph_dict['strongly_connected_components']))
 
     def test_num_strongly_connected_components(self):
@@ -102,7 +102,7 @@ class TestDiGraph:
 
     def test_sink_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
-            array_equal(sorted(graph_dict['DiGraph'].sink_strongly_connected_components()),
+            array_equal(sorted(graph_dict['DiGraph'].sink_strongly_connected_components),
                         sorted(graph_dict['sink_strongly_connected_components']))
 
     def test_num_sink_strongly_connected_components(self):
@@ -133,7 +133,7 @@ class TestDiGraph:
     def test_cyclic_components(self):
         for graph_dict in self.graphs.graph_dicts:
             try:
-                array_equal(sorted(graph_dict['DiGraph'].cyclic_components()),
+                array_equal(sorted(graph_dict['DiGraph'].cyclic_components),
                             sorted(graph_dict['cyclic_components']))
             except NotImplementedError:
                 eq_(graph_dict['DiGraph'].is_strongly_connected, False)

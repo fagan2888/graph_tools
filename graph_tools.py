@@ -23,7 +23,8 @@ class DiGraph:
     Parameters
     ----------
     adj_matrix : array_like(ndim=2)
-        Adjacency matrix representing a directed graph. Must be of shape n x n.
+        Adjacency matrix representing a directed graph. Must be of shape
+        n x n.
 
     weighted : bool
 
@@ -36,16 +37,28 @@ class DiGraph:
         Indicate whether the digraph is strongly connected.
 
     num_strongly_connected_components : int
-        Number of strongly connected components.
+        Number of the strongly connected components.
+
+    strongly_connected_components : list(ndarray(int))
+        List of numpy arrays containing the strongly connected
+        components.
 
     num_sink_strongly_connected_components : int
-        Number of sink strongly connected components.
+        Number of the sink strongly connected components.
+
+    sink_strongly_connected_components : list(ndarray(int))
+        List of numpy arrays containing the sink strongly connected
+        components.
 
     is_aperiodic : bool
         Indicate whether the digraph is aperiodic.
 
     period : int
-        Period of the digraph. Defined only for a strongly connected digraph.
+        Period of the digraph. Defined only for a strongly connected
+        digraph.
+
+    cyclic_components : list(ndarray(int))
+        List of numpy arrays containing the cyclic components.
 
     """
 
@@ -146,32 +159,16 @@ class DiGraph:
     def num_sink_strongly_connected_components(self):
         return len(self.sink_scc_labels)
 
+    @property
     def strongly_connected_components(self):
-        r"""
-        Return the strongly connected components.
-
-        Returns
-        -------
-        list(list(int))
-            List of lists containing the strongly connected components
-
-        """
         if self.is_strongly_connected:
             return [np.arange(self.n)]
         else:
             return [np.where(self.scc_proj == k)[0]
                     for k in range(self.num_strongly_connected_components)]
 
+    @property
     def sink_strongly_connected_components(self):
-        r"""
-        Return the sink strongly connected components.
-
-        Returns
-        -------
-        list(list(int))
-            List of lists containing the sink strongly connected components
-
-        """
         if self.is_strongly_connected:
             return [np.arange(self.n)]
         else:
@@ -243,16 +240,8 @@ class DiGraph:
     def is_aperiodic(self):
         return (self.period == 1)
 
+    @property
     def cyclic_components(self):
-        r"""
-        Return the cyclic components.
-
-        Returns
-        -------
-        list(list(int))
-            List of lists containing the cyclic components
-
-        """
         if self.is_aperiodic:
             return [np.arange(self.n)]
         else:
