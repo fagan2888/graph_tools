@@ -7,7 +7,7 @@ Tests for graph_tools.py
 """
 import sys
 import numpy as np
-from numpy import array_equal
+from numpy.testing import assert_array_equal
 import nose
 from nose.tools import eq_, ok_
 
@@ -92,8 +92,9 @@ class TestDiGraph:
 
     def test_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
-            array_equal(sorted(graph_dict['DiGraph'].strongly_connected_components),
-                        sorted(graph_dict['strongly_connected_components']))
+            assert_array_equal(
+                sorted(graph_dict['DiGraph'].strongly_connected_components),
+                sorted(graph_dict['strongly_connected_components']))
 
     def test_num_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
@@ -102,8 +103,9 @@ class TestDiGraph:
 
     def test_sink_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
-            array_equal(sorted(graph_dict['DiGraph'].sink_strongly_connected_components),
-                        sorted(graph_dict['sink_strongly_connected_components']))
+            assert_array_equal(
+                sorted(graph_dict['DiGraph'].sink_strongly_connected_components),
+                sorted(graph_dict['sink_strongly_connected_components']))
 
     def test_num_sink_strongly_connected_components(self):
         for graph_dict in self.graphs.graph_dicts:
@@ -133,8 +135,9 @@ class TestDiGraph:
     def test_cyclic_components(self):
         for graph_dict in self.graphs.graph_dicts:
             try:
-                array_equal(sorted(graph_dict['DiGraph'].cyclic_components),
-                            sorted(graph_dict['cyclic_components']))
+                assert_array_equal(
+                    sorted(graph_dict['DiGraph'].cyclic_components),
+                    sorted(graph_dict['cyclic_components']))
             except NotImplementedError:
                 eq_(graph_dict['DiGraph'].is_strongly_connected, False)
 

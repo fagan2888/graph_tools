@@ -14,8 +14,7 @@ from __future__ import division
 
 import numpy as np
 import unittest
-from numpy import array_equal
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_array_equal
 
 #from quantecon.mc_tools import DMC
 from mc_tools import MarkovChain
@@ -83,10 +82,10 @@ def test_markovchain_pmatrices():
         assert(mc.num_communication_classes == len(test_dict['comm_classes']))
         assert(mc.is_irreducible == test_dict['is_irreducible'])
         assert(mc.num_recurrent_classes == len(test_dict['rec_classes']))
-        array_equal(sorted(mc.communication_classes),
-                    sorted(test_dict['comm_classes']))
-        array_equal(sorted(mc.recurrent_classes),
-                    sorted(test_dict['rec_classes']))
+        assert_array_equal(sorted(mc.communication_classes),
+                           sorted(test_dict['comm_classes']))
+        assert_array_equal(sorted(mc.recurrent_classes),
+                           sorted(test_dict['rec_classes']))
 
 
 # Basic Class Structure with Setup #
