@@ -22,39 +22,36 @@ from gth_solve import gth_solve
 from warnings import warn
 
 
-class DMC(object):
+class MarkovChain(object):
     """
-    This class is used as a container for a finite Markov transition
-    matrix or a discrete Markov chain.  It stores useful information
-    such as the stationary distributions and allows simulation of state
-    transitions.
-
+    Class for a finite-state discrete-time Markov chain. It stores
+    useful information such as the stationary distributions and allows
+    simulation of state transitions.
 
     Parameters
     ----------
     P : array_like(float, ndim=2)
         The transition matrix.  Must be of shape n x n.
 
-
     Attributes
     ----------
     P : array_like(float, ndim=2)
         The transition matrix.
 
-    stationary_dists : array_like(float, ndim=2)
-        An array with stationary distributions as rows.
+    stationary_distributions : array_like(float, ndim=2)
+        Array containing the stationary distributions as rows.
 
     is_irreducible : bool
         Indicate whether the Markov chain is irreducible.
 
     num_communication_classes : int
-        The number of communication classes.
+        The number of the communication classes.
 
     communication_classes : list(ndarray(int))
         List of numpy arrays containing the communication classes.
 
     num_recurrent_classes : int
-        The number of recurrent classes.
+        The number of the recurrent classes.
 
     recurrent_classes : list(ndarray(int))
         List of numpy arrays containing the recurrent classes.
@@ -68,13 +65,11 @@ class DMC(object):
         chain is irreducible.
 
     cyclic_classes : list(ndarray(int))
-        List of numpy arrays containing the cyclic classes. Defined only when
-        the Markov chain is irreducible.
+        List of numpy arrays containing the cyclic classes. Defined only
+        when the Markov chain is irreducible.
 
     Methods
     -------
-    compute_stationary : Finds stationary distributions
-
     simulate : Simulates the markov chain for a given initial
         state or distribution
 
@@ -99,16 +94,16 @@ class DMC(object):
         # To analyze the structure of P as a directed graph
         self.digraph = DiGraph(P)
 
-        self.stationary_dists = None
+        self._stationary_dists = None
 
     def __repr__(self):
         msg = "Markov chain with transition matrix \nP = \n{0}"
 
-        if self.stationary_dists is None:
+        if self._stationary_dists is None:
             return msg.format(self.P)
         else:
             msg = msg + "\nand stationary distributions \n{1}"
-            return msg.format(self.P, self.stationary_dists)
+            return msg.format(self.P, self._stationary_dists)
 
     def __str__(self):
         return str(self.__repr__)
@@ -160,16 +155,9 @@ class DMC(object):
         else:
             return self.digraph.cyclic_components()
 
-    def compute_stationary(self):
+    def _compute_stationary(self):
         """
-        Computes the stationary distributions of P. These are the left
-        eigenvectors that correspond to the unit eigenvalues of the
-        matrix P' (They satisfy x = x P).
-
-        Returns
-        -------
-        stationary_dists : array_like(float, ndim=2)
-            Array containing the stationary distributions as its rows.
+        Store the stationary distributions in self._stationary_distributions.
 
         """
         if self.is_irreducible:
@@ -181,8 +169,13 @@ class DMC(object):
                 stationary_dists[i, rec_class] = \
                     gth_solve(self.P[rec_class, :][:, rec_class])
 
-        self.stationary_dists = stationary_dists
-        return stationary_dists
+        self._stationary_dists = stationary_dists
+
+    @property
+    def stationary_distributions(self):
+        if self._stationary_dists is None:
+            self._compute_stationary()
+        return self._stationary_dists
 
     def simulate(self, init=0, sample_size=1000):
         sim = mc_sample_path(self.P, init, sample_size)
@@ -191,7 +184,18 @@ class DMC(object):
 
 
 def mc_compute_stationary(P):
-    return DMC(P).compute_stationary()
+    """
+    Computes the stationary distributions of P. These are the left
+    eigenvectors that correspond to the unit eigenvalues of the
+    matrix P' (They satisfy x = x P).
+
+    Returns
+    -------
+    stationary_dists : array_like(float, ndim=2)
+        Array containing the stationary distributions as its rows.
+
+    """
+    return MarkovChain(P).stationary_distributions
 
 
 def mc_sample_path(P, init=0, sample_size=1000):
@@ -252,6 +256,6 @@ mc_sample_path.__doc__ = _sample_path_docstr.format(p_arg=
 # set docstring for methods
 
 if sys.version_info[0] == 3:
-    DMC.simulate.__doc__ = _sample_path_docstr.format(p_arg="")
+    MarkovChain.simulate.__doc__ = _sample_path_docstr.format(p_arg="")
 elif sys.version_info[0] == 2:
-    DMC.simulate.__func__.__doc__ = _sample_path_docstr.format(p_arg="")
+    MarkovChain.simulate.__func__.__doc__ = _sample_path_docstr.format(p_arg="")

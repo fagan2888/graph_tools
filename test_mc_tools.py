@@ -6,11 +6,10 @@ Functions
     mc_sample_path          [Status: TBD]
 
 TODO: Add tests for
-* DMC.is_aperiodic, DMC.period, DMC.cyclic_classes
+* MarkovChain.is_aperiodic, MarkovChain.period, MarkovChain.cyclic_classes
 * mc_compute_stationary
 
 """
-
 from __future__ import division
 
 import numpy as np
@@ -19,7 +18,7 @@ from numpy import array_equal
 from numpy.testing import assert_allclose
 
 #from quantecon.mc_tools import DMC
-from mc_tools import DMC
+from mc_tools import MarkovChain
 
 
 # KMR Function
@@ -54,11 +53,11 @@ def KMR_Markov_matrix_sequential(N, p, epsilon):
     return P
 
 
-# Tests: methods of DMC #
+# Tests: methods of MarkovChain #
 
-def test_dmc_pmatrices():
+def test_markovchain_pmatrices():
     """
-    Test the methods of DMC with P matrix and known solutions
+    Test the methods of MarkovChain with P matrix and known solutions
     """
     testset = [
         {'P': np.array([[0.4, 0.6], [0.2, 0.8]]),  # P matrix
@@ -77,8 +76,8 @@ def test_dmc_pmatrices():
 
     # Loop Through TestSet #
     for test_dict in testset:
-        mc = DMC(test_dict['P'])
-        computed = mc.compute_stationary()
+        mc = MarkovChain(test_dict['P'])
+        computed = mc.stationary_distributions
         assert_allclose(computed, test_dict['stationary_dists'])
 
         assert(mc.num_communication_classes == len(test_dict['comm_classes']))
@@ -93,7 +92,7 @@ def test_dmc_pmatrices():
 # Basic Class Structure with Setup #
 ####################################
 
-class Test_dmc_compute_stationary_KMRMarkovMatrix2():
+class Test_markovchan_compute_stationary_KMRMarkovMatrix2():
     """
     Test Suite for mc_compute_stationary using KMR Markov Matrix [suitable for nose]
     """
@@ -108,8 +107,8 @@ class Test_dmc_compute_stationary_KMRMarkovMatrix2():
     def setUp(self):
         """ Setup a KMRMarkovMatrix and Compute Stationary Values """
         self.P = KMR_Markov_matrix_sequential(self.N, self.p, self.epsilon)
-        self.mc = DMC(self.P)
-        self.stationary = self.mc.compute_stationary()
+        self.mc = MarkovChain(self.P)
+        self.stationary = self.mc.stationary_distributions
         stat_shape = self.stationary.shape
 
         if len(stat_shape) == 1:
