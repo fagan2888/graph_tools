@@ -153,7 +153,7 @@ class MarkovChain(object):
                 'Not defined for a reducible Markov chain'
             )
         else:
-            return self.digraph.cyclic_components()
+            return self.digraph.cyclic_components
 
     def _compute_stationary(self):
         """
