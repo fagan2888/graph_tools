@@ -37,14 +37,14 @@ class DiGraph:
         Indicate whether the digraph is strongly connected.
 
     num_strongly_connected_components : int
-        Number of the strongly connected components.
+        The number of the strongly connected components.
 
     strongly_connected_components : list(ndarray(int))
         List of numpy arrays containing the strongly connected
         components.
 
     num_sink_strongly_connected_components : int
-        Number of the sink strongly connected components.
+        The number of the sink strongly connected components.
 
     sink_strongly_connected_components : list(ndarray(int))
         List of numpy arrays containing the sink strongly connected
@@ -54,7 +54,7 @@ class DiGraph:
         Indicate whether the digraph is aperiodic.
 
     period : int
-        Period of the digraph. Defined only for a strongly connected
+        The period of the digraph. Defined only for a strongly connected
         digraph.
 
     cyclic_components : list(ndarray(int))
