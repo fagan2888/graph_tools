@@ -80,9 +80,13 @@ class MarkovChain(object):
         n, m = self.P.shape
 
         # Check Properties
-        # double check that P is a square matrix
+        # Double check that P is a square matrix
         if n != m:
             raise ValueError('P must be square')
+
+        # Double check that P is a nonnegative matrix
+        if not np.all(self.P >= 0):
+            raise ValueError('P must be nonnegative')
 
         # Double check that the rows of P sum to one
         if not np.allclose(np.sum(self.P, axis=1), np.ones(self.P.shape[0])):
