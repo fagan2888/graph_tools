@@ -12,12 +12,13 @@ TODO: Add tests for
 """
 from __future__ import division
 
+import sys
 import numpy as np
-import unittest
 from numpy.testing import assert_allclose, assert_array_equal
+import nose
 
-#from quantecon.mc_tools import DMC
-from mc_tools import MarkovChain
+#from quantecon.mc_tools import MarkovChain, mc_compute_stationary
+from mc_tools import MarkovChain, mc_compute_stationary
 
 
 # KMR Function
@@ -61,14 +62,26 @@ def test_markovchain_pmatrices():
     testset = [
         {'P': np.array([[0.4, 0.6], [0.2, 0.8]]),  # P matrix
          'stationary_dists': np.array([[0.25, 0.75]]),  # Known solution
-         'comm_classes': [list(range(2))],
-         'rec_classes': [list(range(2))],
+         'comm_classes': [np.arange(2)],
+         'rec_classes': [np.arange(2)],
          'is_irreducible': True,
+         'period': 1,
+         'is_aperiodic': True,
+         'cyclic_classes': [np.arange(2)],
+         },
+        {'P': np.array([[0, 1], [1, 0]]),
+         'stationary_dists': np.array([[0.5, 0.5]]),
+         'comm_classes': [np.arange(2)],
+         'rec_classes': [np.arange(2)],
+         'is_irreducible': True,
+         'period': 2,
+         'is_aperiodic': False,
+         'cyclic_classes': [np.array([0]), np.array([1])],
          },
         {'P': np.eye(2),
-         'stationary_dists': np.eye(2),
-         'comm_classes': [[i] for i in range(2)],
-         'rec_classes': [[i] for i in range(2)],
+         'stationary_dists': np.array([[1, 0], [0, 1]]),
+         'comm_classes': [np.array([0]), np.array([1])],
+         'rec_classes': [np.array([0]), np.array([1])],
          'is_irreducible': False,
          }
     ]
@@ -86,12 +99,29 @@ def test_markovchain_pmatrices():
                            sorted(test_dict['comm_classes']))
         assert_array_equal(sorted(mc.recurrent_classes),
                            sorted(test_dict['rec_classes']))
+        try:
+            assert(mc.period == test_dict['period'])
+        except NotImplementedError:
+            assert(mc.is_irreducible is False)
+        try:
+            assert(mc.is_aperiodic == test_dict['is_aperiodic'])
+        except NotImplementedError:
+            assert(mc.is_irreducible is False)
+        try:
+            assert_array_equal(sorted(mc.cyclic_classes),
+                               sorted(test_dict['cyclic_classes']))
+        except NotImplementedError:
+            assert(mc.is_irreducible is False)
+
+        # Test of mc_compute_stationary
+        computed = mc_compute_stationary(test_dict['P'])
+        assert_allclose(computed, test_dict['stationary_dists'])
 
 
 # Basic Class Structure with Setup #
 ####################################
 
-class Test_markovchan_compute_stationary_KMRMarkovMatrix2():
+class Test_markovchain_compute_stationary_KMRMarkovMatrix2():
     """
     Test Suite for mc_compute_stationary using KMR Markov Matrix [suitable for nose]
     """
@@ -121,7 +151,7 @@ class Test_markovchan_compute_stationary_KMRMarkovMatrix2():
         assert_allclose(np.sum(mc.P, axis=1), np.ones(mc.n))
 
     def test_sum_one(self):
-        "Check each stationary distribution sums to 1"
+        "Check that each stationary distribution sums to 1"
         stationary_distributions = self.stationary
         assert_allclose(np.sum(stationary_distributions, axis=1),
                         np.ones(self.n_stat_dists))
@@ -143,3 +173,10 @@ class Test_markovchan_compute_stationary_KMRMarkovMatrix2():
             for i in range(self.n_stat_dists):
                 curr_v = stationary_distributions[i, :]
                 assert_allclose(np.dot(curr_v, mc.P), curr_v, atol=self.TOL)
+
+
+if __name__ == '__main__':
+    argv = sys.argv[:]
+    argv.append('--verbose')
+    argv.append('--nocapture')
+    nose.main(argv=argv, defaultTest=__file__)
