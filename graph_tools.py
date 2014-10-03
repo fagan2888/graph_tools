@@ -81,11 +81,6 @@ class DiGraph:
 
         self._period = None
 
-    def subgraph(self, nodes):
-        subgraph_csr = self.csgraph[nodes, :][:, nodes]
-        h = self.__class__(subgraph_csr)
-        return h
-
     def _find_scc(self):
         """
         Set ``self._num_scc`` and ``self._scc_proj``
