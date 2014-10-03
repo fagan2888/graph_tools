@@ -77,12 +77,11 @@ class MarkovChain(object):
 
     def __init__(self, P):
         self.P = np.asarray(P)
-        n, m = self.P.shape
 
         # Check Properties
         # Double check that P is a square matrix
-        if n != m:
-            raise ValueError('P must be square')
+        if self.P.shape[0] != self.P.shape[1]:
+            raise ValueError('P must be a square matrix')
 
         # Double check that P is a nonnegative matrix
         if not np.all(self.P >= 0):
@@ -93,7 +92,7 @@ class MarkovChain(object):
             raise ValueError('The rows of P must sum to 1')
 
         # The number of states
-        self.n = n
+        self.n = self.P.shape[0]
 
         # To analyze the structure of P as a directed graph
         self.digraph = DiGraph(P)
@@ -214,7 +213,7 @@ def mc_sample_path(P, init=0, sample_size=1000):
     # In particular, let P_dist[i] be the distribution corresponding to the
     # i-th row P[i,:]
     n = len(P)
-    P_dist = [DiscreteRV(P[i,:]) for i in range(n)]
+    P_dist = [DiscreteRV(P[i, :]) for i in range(n)]
 
     # === generate the sample path === #
     for t in range(sample_size - 1):
