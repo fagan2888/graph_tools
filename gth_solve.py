@@ -3,6 +3,9 @@ Filename: gth_solve.py
 
 Author: Daisuke Oyama
 
+Routine to compute the stationary distribution of an irreducible Markov
+chain by the Grassmann-Taksar-Heyman (GTH) algorithm.
+
 """
 import numpy as np
 
@@ -15,7 +18,8 @@ except:  # python3
 def gth_solve(A, overwrite=False):
     r"""
     This routine computes the stationary distribution of an irreducible
-    stochastic matrix `A`.
+    Markov transition matrix (stochastic matrix) or transition rate
+    matrix (generator matrix) `A`.
 
     More generally, given a Metzler matrix (square matrix whose
     off-diagonal entries are all nonnegative) `A`, this routine solves
@@ -24,19 +28,19 @@ def gth_solve(A, overwrite=False):
     :math:`D_{ii} = \sum_j A_{ij}` for all :math:`i`). One (and only
     one, up to normalization) nonzero solution exists corresponding to
     each reccurent class of `A`, and in particular, if `A` is
-    irreducible, in which case there is a unique solution; where there
-    are more than one, the routine returns the solution that involves
-    the first index `i` such that no path connects `i` to any index
-    larger than `i`. The solution is normalized so that its 1-norm
-    equals one. This routine implements the Grassmann-Taksar-Heyman
-    (GTH) algorithm [1]_, a numerically stable variant of Gaussian
-    elimination, where only the off-diagonal entries of `A` are used as
-    the input data.
+    irreducible, in which case there is a unique solution; when there
+    are more than one solution, the routine returns the solution that
+    contains in its support the first index `i` such that no path
+    connects `i` to any index larger than `i`. The solution is
+    normalized so that its 1-norm equals one. This routine implements
+    the Grassmann-Taksar-Heyman (GTH) algorithm [1]_, a numerically
+    stable variant of Gaussian elimination, where only the off-diagonal
+    entries of `A` are used as the input data. See also Stewart [2]_.
 
     Parameters
     ----------
     A : array_like(float, ndim=2)
-        Stochastic matrix. Must be of shape n x n.
+        Stochastic matrix or generator matrix. Must be of shape n x n.
     overwrite : bool, optional(default=False)
         Whether to overwrite `A`; may improve performance.
 
@@ -50,6 +54,9 @@ def gth_solve(A, overwrite=False):
     .. [1] W. K. Grassmann, M. I. Taksar and D. P. Heyman, "Regenerative
        Analysis and Steady State Distributions for Markov Chains,"
        Operations Research (1985), 1107-1116.
+
+    .. [2] W. J. Stewart, Probability, Markov Chains, Queues, and
+       Simulation, Chapter 10, Princeton University Press, 2009.
 
     """
     A1 = np.array(A, copy=not overwrite)
