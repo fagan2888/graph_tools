@@ -80,7 +80,7 @@ class MarkovChain(object):
 
         # Check Properties
         # Double check that P is a square matrix
-        if self.P.shape[0] != self.P.shape[1]:
+        if len(self.P.shape) != 2 or self.P.shape[0] != self.P.shape[1]:
             raise ValueError('P must be a square matrix')
 
         # Double check that P is a nonnegative matrix
