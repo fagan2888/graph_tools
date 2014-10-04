@@ -16,6 +16,7 @@ import sys
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal
 import nose
+from nose.tools import raises
 
 #from quantecon.mc_tools import MarkovChain, mc_compute_stationary
 from mc_tools import MarkovChain, mc_compute_stationary
@@ -173,6 +174,30 @@ class Test_markovchain_compute_stationary_KMRMarkovMatrix2():
             for i in range(self.n_stat_dists):
                 curr_v = stationary_distributions[i, :]
                 assert_allclose(np.dot(curr_v, mc.P), curr_v, atol=self.TOL)
+
+
+@raises(ValueError)
+def test_raises_value_error_non_2dim():
+    """Test with non 2dim input"""
+    mc = MarkovChain(np.array([0.4, 0.6]))
+
+
+@raises(ValueError)
+def test_raises_value_error_non_sym():
+    """Test with non symmetric input"""
+    mc = MarkovChain(np.array([[0.4, 0.6]]))
+
+
+@raises(ValueError)
+def test_raises_value_error_non_nonnegative():
+    """Test with non nonnegative input"""
+    mc = MarkovChain(np.array([[0.4, 0.6], [-0.2, 1.2]]))
+
+
+@raises(ValueError)
+def test_raises_value_error_non_sum_one():
+    """Test with input such that some of the rows does not sum to one"""
+    mc = MarkovChain(np.array([[0.4, 0.6], [0.2, 0.9]]))
 
 
 if __name__ == '__main__':
