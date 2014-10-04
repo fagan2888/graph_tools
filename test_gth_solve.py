@@ -158,7 +158,7 @@ class StationaryDistEqualToKnown(AddDescription):
 @raises(ValueError)
 def test_raises_value_error_non_2dim():
     """Test with non 2dim input"""
-    gth_solve(np.array([0.4]))
+    gth_solve(np.array([0.4, 0.6]))
 
 
 @raises(ValueError)
