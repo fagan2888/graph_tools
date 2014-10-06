@@ -3,10 +3,7 @@ Filename: graph_tools.py
 
 Author: Daisuke Oyama
 
-Tools for dealing with a graph (preliminary).
-
-TODO:
-* Elaborate the docstrings
+Tools for dealing with a directed graph.
 
 """
 import numpy as np
@@ -17,8 +14,9 @@ from fractions import gcd
 
 class DiGraph:
     r"""
-    Class for directed graphs. In particular, implement methods that
-    find strongly connected components.
+    Class for a directed graph. It stores useful information about the
+    graph structure such as strong connectivity [1]_ and periodicity
+    [2]_.
 
     Parameters
     ----------
@@ -26,11 +24,12 @@ class DiGraph:
         Adjacency matrix representing a directed graph. Must be of shape
         n x n.
 
-    weighted : bool
+    weighted : bool, optional(default=False)
+        Whether to treat `adj_matrix` as a weighted adjacency matrix.
 
     Attributes
     ----------
-    csgraph : csr_matrix
+    csgraph : scipy.sparse.csr_matrix
         Compressed sparse representation of the digraph.
 
     is_strongly_connected : bool
@@ -59,6 +58,19 @@ class DiGraph:
 
     cyclic_components : list(ndarray(int))
         List of numpy arrays containing the cyclic components.
+
+    Notes
+    -----
+    For the definitions, see the Wikipedia entries [1]_, [2]_.
+
+    References
+    ----------
+    .. [1] `Strongly connected component
+       <http://en.wikipedia.org/wiki/Strongly_connected_component>`_,
+       Wikipedia.
+
+    .. [2] `Aperiodic graph
+       <http://en.wikipedia.org/wiki/Aperiodic_graph>`_, Wikipedia.
 
     """
 
@@ -115,7 +127,8 @@ class DiGraph:
     def _condensation_lil(self):
         """
         Return the sparse matrix representation of the condensation digraph
-        in lil format
+        in lil format.
+
         """
         condensation_lil = sparse.lil_matrix(
             (self.num_strongly_connected_components,
@@ -171,12 +184,17 @@ class DiGraph:
                     for k in self.sink_scc_labels.tolist()]
 
     def _compute_period(self):
-        r"""
+        """
         Set ``self._period`` and ``self._cyclic_components_proj``.
+
+        Use the algorithm described in:
+        J. P. Jarvis and D. R. Shier,
+        "Graph-Theoretic Analysis of Finite Markov Chains," 1996.
 
         """
         # Degenerate graph with a single node (which is strongly connected)
         # csgraph.reconstruct_path would raise an exception
+        # github.com/scipy/scipy/issues/4018
         if self.n == 1:
             if self.csgraph[0, 0] == 0:  # No edge: "trivial graph"
                 self._period = 1  # Any universally accepted definition?

@@ -1,13 +1,83 @@
-"""
+r"""
 Authors: Chase Coleman, Spencer Lyon, Daisuke Oyama, Tom Sargent,
          John Stachurski
 
 Filename: mc_tools.py
 
 This file contains some useful objects for handling a finite-state
-discrete-time Markov chain.  It contains code written by several people
-and was ultimately compiled into a single file to take advantage of the
-pros of each.
+discrete-time Markov chain.
+
+Definitions and Some Known Facts about Markov Chains
+----------------------------------------------------
+
+Let :math:`\{X_t\}` be a Markov chain represented by an :math:`n \times
+n` stochastic matrix :math:`P`. State :math:`i` *has access* to state
+:math:`j`, denoted :math:`i \to j`, if :math:`i = j` or :math:`P^k[i, j]
+> 0` for some :math:`k = 1, 2, \ldots`; :math:`i` and `j` *communicate*,
+denoted :math:`i \leftrightarrow j`, if :math:`i \to j` and :math:`j \to
+i`. The binary relation :math:`\leftrightarrow` is an equivalent
+relation. A *communication class* of the Markov chain :math:`\{X_t\}`,
+or of the stochastic matrix :math:`P`, is an equivalent class of
+:math:`\leftrightarrow`. Equivalently, a communication class is a
+*strongly connected component* (SCC) in the associated *directed graph*
+:math:`\Gamma(P)`, a directed graph with :math:`n` nodes where there is
+an edge from :math:`i` to :math:`j` if and only if :math:`P[i, j] > 0`.
+The Markov chain, or the stochastic matrix, is *irreducible* if it
+admits only one communication class, or equivalently, if
+:math:`\Gamma(P)` is *strongly connected*.
+
+A state :math:`i` is *recurrent* if :math:`i \to j` implies :math:`j \to
+i`; it is *transient* if it is not recurrent. For any :math:`i, j`
+contained in a communication class, :math:`i` is recurrent if and only
+if :math:`j` is recurrent. Therefore, recurrence is a property of a
+communication class. Thus, a communication class is a *recurrent class*
+if it contains a recurrent state. Equivalently, a recurrent class is a
+SCC that corresponds to a sink node in the *condensation* of the
+directed graph :math:`\Gamma(P)`, where the condensation of
+:math:`\Gamma(P)` is a directed graph in which each SCC is replaced with
+a single node and there is an edge from one SCC :math:`C` to another SCC
+:math:`C'` if :math:`C \neq C'` and some node in :math:`C` has access to
+some node in :math:`C'`. A recurrent class is also called a *closed
+communication class*.
+
+For example, if the entries of :math:`P` are all strictly positive, then
+the whole state space is a communication class as well as a recurrent
+class. (More generally, if there is only one communication class, then
+it is a recurrent class.) As another example, consider the stochastic
+matrix :math:`P = [[1, 0], [0,5, 0.5]]`. This has two communication
+classes, :math:`\{0\}` and :math:`\{1\}`, and :math:`\{0\}` is the only
+recurrent class.
+
+A *stationary distribution* of the Markov chain :math:`\{X_t\}`, or of
+the stochastic matrix :math:`P`, is a nonnegative vector :math:`x` such
+that :math:`x' P = x'` and :math:`x' \mathbf{1} = 1`, where
+:math:`\mathbf{1}` is the vector of ones. The Markov chain has a unique
+stationary distribution if and only if it has a unique recurrent class.
+More generally, each recurrent class has a unique stationary
+distribution whose support equals that recurrent class. The set of all
+stationary distributions is given by the convex hull of these unique
+stationary distributions for the recurrent classes.
+
+A natural number :math:`d` is the *period* of state :math:`i` if it is
+the greatest common divisor of all :math:`k`'s such that :math:`P^k[i,
+i] > 0`; equivalently, it is the GCD of the lengths of the cycles in
+:math:`\Gamma(P)` passing through :math:`i`. For any :math:`i, j`
+contained in a communication class, :math:`i` has period :math:`d` if
+and only if :math:`j` has period :math:`d`. The *period* of an
+irreducible Markov chain (or of an irreducible stochastic matrix) is the
+period of any state. An irreducible Markov chain is *aperiodic* if its
+period is one. A Markov chain is irreducible and aperiodic if and only
+if it is *uniformly ergodic*, i.e., there exists some :math:`m` such
+that :math:`P^m[i, j] > 0` for all :math:`i, j` (in this case, :math:`P`
+is also called *primitive*).
+
+Suppose that an irreducible Markov chain has period :math:`d`. Fix any
+state, say state :math:`0`. For each :math:`m = 0, \ldots, d-1`, let
+:math:`S_m` be the set of states :math:`i` such that :math:`P^{kd+m}[0,
+i] > 0` for some :math:`k`. These sets :math:`S_0, \ldots, S_{d-1}`
+constitute a partition of the state space and are called the *cyclic
+classes*. For each :math:`S_m` and each :math:`i \in S_m`, we have
+:math:`\sum_{j \in S_{m+1}} P[i, j] = 1`, where :math:`S_d = S_0`.
 
 """
 from __future__ import division
@@ -25,8 +95,9 @@ from warnings import warn
 class MarkovChain(object):
     """
     Class for a finite-state discrete-time Markov chain. It stores
-    useful information such as the stationary distributions and allows
-    simulation of state transitions.
+    useful information such as the stationary distributions, and
+    communication, recurrent, and cyclic classes, and allows simulation
+    of state transitions.
 
     Parameters
     ----------
@@ -39,7 +110,8 @@ class MarkovChain(object):
         The transition matrix.
 
     stationary_distributions : array_like(float, ndim=2)
-        Array containing the stationary distributions as rows.
+        Array containing stationary distributions, one for each
+        recurrent class, as rows.
 
     is_irreducible : bool
         Indicate whether the Markov chain is irreducible.
@@ -70,8 +142,8 @@ class MarkovChain(object):
 
     Methods
     -------
-    simulate : Simulates the markov chain for a given initial
-        state or distribution
+    simulate : Simulates the markov chain for a given initial state or
+        distribution.
 
     """
 
@@ -181,16 +253,16 @@ class MarkovChain(object):
         return self._stationary_dists
 
     def simulate(self, init=0, sample_size=1000):
-        sim = mc_sample_path(self.P, init, sample_size)
+        X = mc_sample_path(self.P, init, sample_size)
 
-        return sim
+        return X
 
 
 def mc_compute_stationary(P):
     """
-    Computes the stationary distributions of P. These are the left
-    eigenvectors that correspond to the unit eigenvalues of the
-    matrix P' (They satisfy x = x P).
+    Computes stationary distributions of P, one for each recurrent
+    class. Any stationary distribution is written as a convex
+    combination of these distributions.
 
     Returns
     -------
@@ -229,15 +301,15 @@ def mc_sample_path(P, init=0, sample_size=1000):
 # For drawing a sample path
 _sample_path_docstr = \
 """
-Generates one sample path from a finite Markov chain with (n x n)
+Generates one sample path from the Markov chain represented by (n x n)
 transition matrix P on state space S = {{0,...,n-1}}.
 
 Parameters
 ----------
 {p_arg}init : array_like(float ndim=1) or scalar(int)
-    If init is an array_like then it is treated as the initial
-    distribution across states.  If init is a scalar then it
-    treated as the deterministic initial state.
+    If init is an array_like, then it is treated as the initial
+    distribution across states.  If init is a scalar, then it treated as
+    the deterministic initial state.
 
 sample_size : scalar(int), optional(default=1000)
     The length of the sample path.
@@ -245,14 +317,14 @@ sample_size : scalar(int), optional(default=1000)
 Returns
 -------
 X : array_like(int, ndim=1)
-    The simulation of states
+    The simulation of states.
 
 """
 
 # set docstring for functions
 mc_sample_path.__doc__ = _sample_path_docstr.format(p_arg=
 """P : array_like(float, ndim=2)
-    A discrete Markov transition matrix
+    A Markov transition matrix
 
 """)
 

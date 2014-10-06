@@ -28,14 +28,15 @@ def gth_solve(A, overwrite=False):
     :math:`D_{ii} = \sum_j A_{ij}` for all :math:`i`). One (and only
     one, up to normalization) nonzero solution exists corresponding to
     each reccurent class of `A`, and in particular, if `A` is
-    irreducible, in which case there is a unique solution; when there
-    are more than one solution, the routine returns the solution that
-    contains in its support the first index `i` such that no path
-    connects `i` to any index larger than `i`. The solution is
-    normalized so that its 1-norm equals one. This routine implements
-    the Grassmann-Taksar-Heyman (GTH) algorithm [1]_, a numerically
-    stable variant of Gaussian elimination, where only the off-diagonal
-    entries of `A` are used as the input data. See also Stewart [2]_.
+    irreducible, there is a unique solution; when there are more than
+    one solution, the routine returns the solution that contains in its
+    support the first index `i` such that no path connects `i` to any
+    index larger than `i`. The solution is normalized so that its 1-norm
+    equals one. This routine implements the Grassmann-Taksar-Heyman
+    (GTH) algorithm [1]_, a numerically stable variant of Gaussian
+    elimination, where only the off-diagonal entries of `A` are used as
+    the input data. For a nice exposition of the algorithm, see Stewart
+    [2]_, Chapter 10.
 
     Parameters
     ----------
@@ -56,7 +57,7 @@ def gth_solve(A, overwrite=False):
        Operations Research (1985), 1107-1116.
 
     .. [2] W. J. Stewart, Probability, Markov Chains, Queues, and
-       Simulation, Chapter 10, Princeton University Press, 2009.
+       Simulation, Princeton University Press, 2009.
 
     """
     A1 = np.array(A, copy=not overwrite)
