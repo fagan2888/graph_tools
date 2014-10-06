@@ -5,10 +5,6 @@ Functions
 ---------
     mc_sample_path          [Status: TBD]
 
-TODO: Add tests for
-* MarkovChain.is_aperiodic, MarkovChain.period, MarkovChain.cyclic_classes
-* mc_compute_stationary
-
 """
 from __future__ import division
 
