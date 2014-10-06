@@ -324,7 +324,7 @@ X : array_like(int, ndim=1)
 # set docstring for functions
 mc_sample_path.__doc__ = _sample_path_docstr.format(p_arg=
 """P : array_like(float, ndim=2)
-    A Markov transition matrix
+    A Markov transition matrix.
 
 """)
 
