@@ -3,6 +3,7 @@ Tests for mc_tools.py
 
 Functions
 ---------
+    mc_compute_stationary   [Status: Tested in test_markovchain_pmatrices]
     mc_sample_path          [Status: TBD]
 
 """
@@ -50,11 +51,12 @@ def KMR_Markov_matrix_sequential(N, p, epsilon):
     return P
 
 
-# Tests: methods of MarkovChain #
+# Tests: methods of MarkovChain, mc_compute_stationary #
 
 def test_markovchain_pmatrices():
     """
-    Test the methods of MarkovChain with P matrix and known solutions
+    Test the methods of MarkovChain, as well as mc_compute_stationary,
+    with P matrix and known solutions
     """
     testset = [
         {'P': np.array([[0.4, 0.6], [0.2, 0.8]]),  # P matrix
@@ -118,9 +120,10 @@ def test_markovchain_pmatrices():
 # Basic Class Structure with Setup #
 ####################################
 
-class Test_markovchain_compute_stationary_KMRMarkovMatrix2():
+class Test_markovchain_stationary_distributions_KMRMarkovMatrix2():
     """
-    Test Suite for mc_compute_stationary using KMR Markov Matrix [suitable for nose]
+    Test Suite for MarkovChain.stationary_distributions using KMR Markov
+    Matrix [suitable for nose]
     """
 
     # Starting Values #
