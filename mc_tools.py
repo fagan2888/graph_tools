@@ -86,8 +86,8 @@ classes*. For each :math:`S_m` and each :math:`i \in S_m`, we have
 """
 from __future__ import division
 import numpy as np
-import sys
 from fractions import gcd
+import sys
 #from .discrete_rv import DiscreteRV
 from discrete_rv import DiscreteRV
 #from .graph_tools import DiGraph
